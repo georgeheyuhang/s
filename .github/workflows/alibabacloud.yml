@@ -1,0 +1,35 @@
+name: Build & Deploy to Windows ECS
+on:
+  push:
+    branches: ["main"]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      # 1. 拉取你的网页源码
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. 安装SSH工具，上传全部网站文件到ECS网站目录
+      - name: Upload files to Windows ECS
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.ECS_IP }}
+          username: ${{ secrets.ECS_USER }}
+          password: ${{ secrets.ECS_PWD }}
+          source: "."
+          target: "C:/web/video-call" # 服务器存放网站的文件夹
+
+      # 3. 远程执行Windows命令，启动网页服务（以简单http服务举例）
+      - name: Remote run service on ECS
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.ECS_IP }}
+          username: ${{ secrets.ECS_USER }}
+          password: ${{ secrets.ECS_PWD }}
+          script: |
+            cd C:\web\video-call
+            # 示例：用Node启动静态网页服务，你可替换成nginx/iis启动命令
+            npm install -g http-server
+            Start-Process cmd -ArgumentList "/c http-server -p 80"
